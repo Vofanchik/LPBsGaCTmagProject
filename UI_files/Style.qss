@@ -1,0 +1,31 @@
+QListWidget {
+    color: #FFFFFF;
+    background-color: #33373B;
+}
+
+QListWidget::item {
+    height: 50px;
+}
+
+QListWidget::item:selected {
+    background-color: #2ABf9E;
+}
+
+QLabel {
+    qproperty-alignment: AlignCenter;
+    font-size: 14px;
+    font: bold;
+}
+
+QPushButton {
+    background-color: #2ABf9E;
+    font-size: 18px;
+}
+
+QPushButton#delCompoundButton {
+    background-color: red;
+}
+
+QPushButton#delCompoundButton:disabled {
+    background-color: grey;
+}

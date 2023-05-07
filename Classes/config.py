@@ -1,0 +1,1 @@
+jchempaint_path: str = './external/JChemPaint.jar'
