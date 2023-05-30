@@ -17,7 +17,7 @@ def getMolSvg(smile='NC(C(=O)O)CS'):
     drawer = rdMolDraw2D.MolDraw2DSVG(300, 300)
     drawer.DrawMolecule(mc)
     drawer.FinishDrawing()
-    svg = drawer.GetDrawingText()
+    svg = drawer.GetDrawingText().replace('opacity:1.0', 'opacity:0.0')
     return svg
 
 def mol_mass_from_smiles(smiles):

@@ -27,6 +27,26 @@ class DataBase:
             UNIQUE ("name") ON CONFLICT IGNORE
             )''')
 
+        self.cur.execute(
+            '''CREATE TABLE IF NOT EXISTS cell_lines(          
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE, 
+            description Text,
+            UNIQUE ("name") ON CONFLICT IGNORE
+            )''')
+
+        self.cur.execute(
+            '''CREATE TABLE IF NOT EXISTS MTT(          
+            id INTEGER PRIMARY KEY,
+            date text,
+            compound_id integer REFERENCES compounds (id),
+            cell_line_id integer REFERENCES cell_lines (id),
+            EC50 real ,
+            SE real
+            )''')
+
+
+
         self.conn.commit()
 
     def add_compound(self, name, smiles, solutor_id=1, molecular_weight=0.0):
@@ -51,6 +71,18 @@ class DataBase:
         self.conn.commit()
         return self.cur.lastrowid
 
+    def add_cellLine(self, name, description):
+        self.cur.execute(f"INSERT INTO cell_lines(name, description) VALUES(?,?)",
+                         (name, description, ))
+        self.conn.commit()
+        return self.cur.lastrowid
+
+    def add_MTT(self, date, compound_id, cell_line_id, EC50, SE):
+        self.cur.execute(f"INSERT INTO MTT(date, compound_id, cell_line_id, EC50, SE) VALUES(?,?,?,?,?)",
+                         (date, compound_id, cell_line_id, EC50, SE))
+        self.conn.commit()
+        return self.cur.lastrowid
+
     def show_compounds(self):
         return self.cur.execute('''SELECT * FROM compounds 
         LEFT JOIN solutors ON compounds.solutor_id = solutors.id 
@@ -58,6 +90,10 @@ class DataBase:
 
     def show_solutors(self):
         return self.cur.execute('''SELECT * FROM solutors 
+        ORDER BY id ASC''').fetchall()
+
+    def show_lines(self):
+        return self.cur.execute('''SELECT * FROM cell_lines 
         ORDER BY id ASC''').fetchall()
 
     # def show_compound_by_id(self, id):
