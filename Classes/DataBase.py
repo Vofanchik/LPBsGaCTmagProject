@@ -92,6 +92,20 @@ class DataBase:
         return self.cur.execute('''SELECT * FROM solutors 
         ORDER BY id ASC''').fetchall()
 
+    def show_mtt(self, comp_id=None):
+        if comp_id == None:
+            return self.cur.execute('''SELECT * FROM MTT 
+                LEFT JOIN compounds ON MTT.compound_id = compounds.id
+                LEFT JOIN cell_lines ON MTT.cell_line_id = cell_lines.id
+                ''').fetchall()
+
+        else:
+            return self.cur.execute('''SELECT * FROM MTT 
+                LEFT JOIN compounds ON MTT.compound_id = compounds.id
+                LEFT JOIN cell_lines ON MTT.cell_line_id = cell_lines.id
+                where compound_id = ?''', (comp_id,)).fetchall()
+
+
     def show_lines(self):
         return self.cur.execute('''SELECT * FROM cell_lines 
         ORDER BY id ASC''').fetchall()
@@ -106,5 +120,5 @@ class DataBase:
 if __name__ == '__main__':
     db = DataBase('../external/resources/data.db')
     # db.add_solutor('Вода')
-    print(db.show_compounds())
+    print(db.show_mtt())
     # print(mol_mass_from_smiles('C1=CCCC2C(CC1)CCCCCC2'))

@@ -1,11 +1,12 @@
 from datetime import datetime
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QByteArray
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QMovie
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QSizePolicy, QLabel, QTextEdit, QMenu, QDateEdit, \
-    QFileDialog, QComboBox
+    QFileDialog, QComboBox, QMessageBox, QWidget
 from PyQt6.QtCore import Qt
+from PyQt6.uic.properties import QtCore
 
 from Classes.DataBase import DataBase
 from Classes.dateclass import from_dot_to_rec
@@ -15,6 +16,35 @@ from Classes.Rclass import calculate_EC50_SE_plots
 
 from UI_files.DialogAddNewCompound import Ui_Dialog
 from UI_files.MainWindow import Ui_MainWindow
+from UI_files.MTTable import Ui_MTTable
+
+
+class MTTtableWidget(QDialog):
+    def __init__(self, mode=False, **kwargs):
+        super(MTTtableWidget, self).__init__()
+        self.kwargs = kwargs
+        self.ui = Ui_MTTable()
+        self.ui.setupUi(self)
+        self.db = DataBase()
+        self.fill_MTT_table()
+
+
+    def fill_MTT_table(self):
+        for co, it in enumerate(self.db.show_mtt(self.kwargs['chosen_compound_id'])):
+            print(it[0])
+            self.ui.tableWidget.setRowCount(co + 1)
+            self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(it[0]))
+            self.ui.tableWidget.setItem(co, 1, QTableWidgetItem(from_dot_to_rec(1,it[1])))
+            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(it[13]))
+            self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(it[7]))
+
+            self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(str(it[4])))
+            self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(str(it[5])))
+
+
+
+
+
 
 
 class DialogAddNewCompound(QDialog):
@@ -111,6 +141,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.db = DataBase()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+
+
+        self.load_dialog = QDialog()
+        self.load_dialog_layout = QtWidgets.QVBoxLayout()
+        self.load_dialog.setWindowTitle('Подождите')
+        self.load_dialog.setGeometry(500,200,1,1)
+        self.load_dialog.setLayout(self.load_dialog_layout)
+        self.load_dialog_label = QtWidgets.QLabel()
+        self.load_dialog_movie = QMovie("./external/resources/gif/load.gif")
+        self.load_dialog_label.setMovie(self.load_dialog_movie)
+        self.load_dialog_layout.addWidget(self.load_dialog_label)
+
+
+
         try:
             self.setStyleSheet(open("./Ui_files/Style.qss", "r").read())
         except:
@@ -149,19 +193,26 @@ class MainWindow(QtWidgets.QMainWindow):
         # Создаем меню
         self.contextMenu = QMenu(self)
         self.addMTTAction = QAction("Добавить МТТ-тест", self)
+        self.ShowMTTByIdAction = QAction("Показать тесты", self)
+
         self.contextMenu.addAction(self.addMTTAction)
+        self.contextMenu.addAction(self.ShowMTTByIdAction)
+
         self.addMTTAction.setDisabled(True)
+        self.ShowMTTByIdAction.setDisabled(True)
 
         self.ui.tableWidget.cellClicked.connect(lambda: [self.ui.delCompoundButton.setEnabled(True),
-                                                 self.addMTTAction.setEnabled(True)])
+                                                         self.addMTTAction.setEnabled(True),
+                                                         self.ShowMTTByIdAction.setEnabled(True)])
 
         # Подключаем сигналы к слотам
         self.addMTTAction.triggered.connect(self.add_mtt_dialog)
+        self.ShowMTTByIdAction.triggered.connect(self.show_mtt_dialog)
+
 
         # Подключаем меню к таблице
         self.ui.tableWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.tableWidget.customContextMenuRequested.connect(self.showContextMenu)
-
 
     def showContextMenu(self, position):
         # Показываем контекстное меню в указанной позиции
@@ -191,10 +242,31 @@ class MainWindow(QtWidgets.QMainWindow):
         if rej is False:
             return
 
-        ic_ec = calculate_EC50_SE_plots(file_path,chosen_compound, line_name, int(sheet_num))
+
+
+        self.load_dialog.show()
+        self.startAnimation()
+        try:
+            ic_ec = calculate_EC50_SE_plots(file_path,chosen_compound, line_name, int(sheet_num))
+            self.db.add_MTT(from_dot_to_rec(0, date_test), chosen_compound_id, line_num, round(ic_ec[0], 2),
+                            round(ic_ec[1], 2))
+            self.load_dialog.hide()
+
+        except:
+            self.load_dialog.hide()
+            QMessageBox().critical(self, 'Ошибка', "Что-то пошло не так")
 
         # print(file_path,from_dot_to_rec(0, date_test),sheet_num,line_num, line_name, ic_ec[0])
-        self.db.add_MTT(from_dot_to_rec(0, date_test), chosen_compound_id, line_num, round(ic_ec[0],2 ), round(ic_ec[1],2 ))
+
+    def show_mtt_dialog(self):
+        chosen_compound_id = self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text()
+        dlg = MTTtableWidget(chosen_compound_id = chosen_compound_id)
+        dlg.ui.tableWidget.setColumnHidden(0, True)
+
+        if dlg.exec():
+            pass
+
+
 
     def menu_bar_triggered(self, press):
         if press.text() == "Добавить растворитель":
@@ -227,6 +299,12 @@ class MainWindow(QtWidgets.QMainWindow):
                 return
 
             self.db.add_cellLine(val, descript)
+
+    def startAnimation(self):
+        self.load_dialog_movie.start()
+
+    def stopAnimation(self):
+        self.load_dialog_movie.stop()
 
     def enter_chosen_compound(self):
         self.id = self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text()
@@ -285,4 +363,5 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(f"{it[7]}"))
             self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(f"{it[5]}"))
             self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(f"{it[4]}"))
+
 
