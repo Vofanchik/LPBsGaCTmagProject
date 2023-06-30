@@ -1,5 +1,5 @@
 import sqlite3
-from Classes.RDkit import mol_mass_from_smiles, iupac_from_smiles
+from Classes.RDkit import mol_mass_from_smiles, iupac_from_smiles, return_morganfp, similiaryty_list_return
 
 
 class DataBase:
@@ -17,6 +17,7 @@ class DataBase:
                 solutor_id integer,
                 molecular_weight REAL,
                 iupac_name text,
+                morganfp blob,
                 FOREIGN KEY (solutor_id) REFERENCES solutors(id)
                 )''')
 
@@ -49,7 +50,7 @@ class DataBase:
 
         self.conn.commit()
 
-    def add_compound(self, name, smiles, solutor_id=1, molecular_weight=0.0):
+    def add_compound(self, name, smiles, morganfp, solutor_id=1, molecular_weight=0.0, ):
         try:
             molecular_weight = mol_mass_from_smiles(smiles)
         except:
@@ -60,8 +61,9 @@ class DataBase:
         except:
             iupac_name = ''
 
-        self.cur.execute(f"INSERT INTO compounds(name, smiles, solutor_id, molecular_weight, iupac_name) VALUES(?,?,?,?,?)",
-                         (name, smiles,solutor_id, molecular_weight, iupac_name))
+        self.cur.execute("INSERT INTO compounds(name, smiles, solutor_id, molecular_weight, iupac_name, morganfp) "
+                         "VALUES(?,?,?,?,?,?)",
+                         (name, smiles,solutor_id, molecular_weight, iupac_name, morganfp))
         self.conn.commit()
         return self.cur.lastrowid
 
@@ -87,6 +89,10 @@ class DataBase:
         return self.cur.execute('''SELECT * FROM compounds 
         LEFT JOIN solutors ON compounds.solutor_id = solutors.id 
         ORDER BY id ASC''').fetchall()
+
+    def show_smile_by_id(self, id):
+        return self.cur.execute('''SELECT smiles FROM compounds 
+        where id = ?''', (id,)).fetchone()
 
     def show_solutors(self):
         return self.cur.execute('''SELECT * FROM solutors 
@@ -117,8 +123,17 @@ class DataBase:
         self.cur.execute(f'DELETE from compounds where id = {id}')
         self.conn.commit()
 
+    def showMorganFP_byId(self, id):
+        return self.cur.execute('''SELECT morganfp FROM compounds 
+                where id = ?''', (id,)).fetchone()
+
+    def show_all_id_name_smile(self):
+        return self.cur.execute('''SELECT id,name,smiles FROM compounds''').fetchall()
+
 if __name__ == '__main__':
     db = DataBase('../external/resources/data.db')
     # db.add_solutor('Вода')
-    print(db.show_mtt())
+    # print(db.show_all_id_name_smile())
+    # print(similiaryty_list_return('C1(=CC=C(C=C1)C=2N=NN(C2C#N)C3=C4N(C5=C3C(=C(C(=C5F)F)F)F)C=CC=C4)OC', db.show_all_id_name_smile()))
     # print(mol_mass_from_smiles('C1=CCCC2C(CC1)CCCCCC2'))
+    print(db.show_smile_by_id(2))

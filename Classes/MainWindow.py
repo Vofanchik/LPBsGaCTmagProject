@@ -11,12 +11,13 @@ from PyQt6.uic.properties import QtCore
 from Classes.DataBase import DataBase
 from Classes.dateclass import from_dot_to_rec
 from Classes.JchemPaint import runJCP
-from Classes.RDkit import getMolSvg
+from Classes.RDkit import getMolSvg, similiaryty_list_return
 from Classes.Rclass import calculate_EC50_SE_plots
 
 from UI_files.DialogAddNewCompound import Ui_Dialog
 from UI_files.MainWindow import Ui_MainWindow
 from UI_files.MTTable import Ui_MTTable
+
 
 
 class MTTtableWidget(QDialog):
@@ -26,20 +27,39 @@ class MTTtableWidget(QDialog):
         self.ui = Ui_MTTable()
         self.ui.setupUi(self)
         self.db = DataBase()
-        self.fill_MTT_table()
+
+        if not mode:
+            self.fill_MTT_table()
+        elif mode=='Similarity':
+            self.init_similarity_mode()
 
 
     def fill_MTT_table(self):
         for co, it in enumerate(self.db.show_mtt(self.kwargs['chosen_compound_id'])):
-            print(it[0])
             self.ui.tableWidget.setRowCount(co + 1)
             self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(it[0]))
             self.ui.tableWidget.setItem(co, 1, QTableWidgetItem(from_dot_to_rec(1,it[1])))
-            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(it[13]))
+            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(it[14]))
             self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(it[7]))
 
             self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(str(it[4])))
             self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(str(it[5])))
+
+    def init_similarity_mode(self):
+        self.setWindowTitle("Подобия")
+        [self.ui.tableWidget.setColumnHidden(i, True) for i in range(3,6)]
+        self.ui.tableWidget.setColumnHidden(0, True)
+        [self.ui.tableWidget.horizontalHeaderItem(n+1).setText(i) for n,i in enumerate(['Наименование', '% сходства'])]
+        self.ui.tableWidget.setColumnWidth(1, 400)
+        self.fill_similiarity_table()
+
+    def fill_similiarity_table(self):
+        for co, it in enumerate(similiaryty_list_return(self.db.show_smile_by_id(self.kwargs['chosen_compound_id'])[0],
+                                                        self.db.show_all_id_name_smile())[0:100]):
+            self.ui.tableWidget.setRowCount(co + 1)
+            self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(it[0]))
+            self.ui.tableWidget.setItem(co, 1, QTableWidgetItem(it[1]))
+            self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(str(round(it[2]*100,2))))
 
 
 
@@ -194,20 +214,27 @@ class MainWindow(QtWidgets.QMainWindow):
         self.contextMenu = QMenu(self)
         self.addMTTAction = QAction("Добавить МТТ-тест", self)
         self.ShowMTTByIdAction = QAction("Показать тесты", self)
+        self.ShowSimiliarity = QAction("Найти подобия", self)
 
         self.contextMenu.addAction(self.addMTTAction)
         self.contextMenu.addAction(self.ShowMTTByIdAction)
+        self.contextMenu.addAction(self.ShowSimiliarity)
+
 
         self.addMTTAction.setDisabled(True)
         self.ShowMTTByIdAction.setDisabled(True)
+        self.ShowSimiliarity.setDisabled(True)
+
 
         self.ui.tableWidget.cellClicked.connect(lambda: [self.ui.delCompoundButton.setEnabled(True),
                                                          self.addMTTAction.setEnabled(True),
-                                                         self.ShowMTTByIdAction.setEnabled(True)])
+                                                         self.ShowMTTByIdAction.setEnabled(True),
+                                                         self.ShowSimiliarity.setEnabled(True)])
 
         # Подключаем сигналы к слотам
         self.addMTTAction.triggered.connect(self.add_mtt_dialog)
         self.ShowMTTByIdAction.triggered.connect(self.show_mtt_dialog)
+        self.ShowSimiliarity.triggered.connect(self.show_similiarity_dialog)
 
 
         # Подключаем меню к таблице
@@ -260,11 +287,18 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def show_mtt_dialog(self):
         chosen_compound_id = self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text()
-        dlg = MTTtableWidget(chosen_compound_id = chosen_compound_id)
+        dlg = MTTtableWidget(chosen_compound_id=chosen_compound_id)
         dlg.ui.tableWidget.setColumnHidden(0, True)
 
         if dlg.exec():
             pass
+
+    def show_similiarity_dialog(self):
+        chosen_compound_id = self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text()
+        dlg = MTTtableWidget(mode='Similarity', chosen_compound_id=chosen_compound_id)
+
+        dlg.exec()
+
 
 
 
@@ -344,7 +378,7 @@ class MainWindow(QtWidgets.QMainWindow):
         f = open('./smile.txt', 'r')
         smile = f.read()
         f.close()
-        self.db.add_compound(name, smile, solutor)
+        self.db.add_compound(name=name, smiles=smile, solutor_id=solutor)
         self.fill_table_compounds()
         self.ui.statusbar.showMessage("Соединение добавлено", 5000)
 
@@ -360,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(f"{it[0]}"))
             self.ui.tableWidget.setItem(co, 1, QTableWidgetItem(f"{it[1]}"))
             self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(f"{it[2]}"))
-            self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(f"{it[7]}"))
+            self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(f"{it[8]}"))
             self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(f"{it[5]}"))
             self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(f"{it[4]}"))
 
