@@ -1,6 +1,7 @@
+from PyQt6.QtCore import QBuffer, QByteArray, QIODevice
 from rdkit import Chem, DataStructs
-from rdkit.Chem import rdDepictor, AllChem
-from rdkit.Chem.Draw import rdMolDraw2D
+from rdkit.Chem import rdDepictor, AllChem, Draw
+from rdkit.Chem.Draw import rdMolDraw2D, SimilarityMaps
 from rdkit.Chem import rdMolDescriptors
 from rdkit import DataStructs
 
@@ -49,7 +50,38 @@ def similiaryty_list_return(smile, list_of_id_name_smiles):
     r.sort(key=lambda x: x[2], reverse=True)
     return r
 
-def similiaryty_map_rerurn()
+def similiaryty_map_rerurn(target, referent):
+    targetmol = Chem.MolFromSmiles(target)
+    refmol = Chem.MolFromSmiles(referent)
+
+    d = Draw.MolDraw2DSVG(800, 800)
+    d.ClearDrawing()
+    target_mol_simi_fig, maxweight = SimilarityMaps.GetSimilarityMapForFingerprint(
+        refmol,
+        targetmol,
+        lambda m, i: SimilarityMaps.GetMorganFingerprint(
+            m, i, radius=2, fpType='bv'),
+        draw2d=d,
+    )
+    d.FinishDrawing()
+    return d.GetDrawingText().replace('opacity:1.0', 'opacity:0.0')
+
+def similiaryty_map_rerurn_png(target, referent):
+    targetmol = Chem.MolFromSmiles(target)
+    refmol = Chem.MolFromSmiles(referent)
+
+    d = Draw.MolDraw2DCairo(800, 800)
+    d.ClearDrawing()
+    target_mol_simi_fig, maxweight = SimilarityMaps.GetSimilarityMapForFingerprint(
+        refmol,
+        targetmol,
+        lambda m, i: SimilarityMaps.GetMorganFingerprint(
+            m, i, radius=2, fpType='bv'),
+        draw2d=d,
+    )
+    d.FinishDrawing()
+
+    return d.GetDrawingText()
 
 
 if __name__ == '__main__':

@@ -50,7 +50,7 @@ class DataBase:
 
         self.conn.commit()
 
-    def add_compound(self, name, smiles, morganfp, solutor_id=1, molecular_weight=0.0, ):
+    def add_compound(self, name, smiles, morganfp=None, solutor_id=1, molecular_weight=0.0):
         try:
             molecular_weight = mol_mass_from_smiles(smiles)
         except:
@@ -94,6 +94,10 @@ class DataBase:
         return self.cur.execute('''SELECT smiles FROM compounds 
         where id = ?''', (id,)).fetchone()
 
+    def show_name_by_id(self, id):
+        return self.cur.execute('''SELECT name FROM compounds 
+        where id = ?''', (id,)).fetchone()
+
     def show_solutors(self):
         return self.cur.execute('''SELECT * FROM solutors 
         ORDER BY id ASC''').fetchall()
@@ -130,10 +134,19 @@ class DataBase:
     def show_all_id_name_smile(self):
         return self.cur.execute('''SELECT id,name,smiles FROM compounds''').fetchall()
 
+    def show_best_mtt_result(self, id):
+        return self.cur.execute('''SELECT EC50 FROM compounds 
+                        LEFT JOIN MTT ON compounds.id = MTT.compound_id
+                        where compounds.id = ?
+                        ORDER by EC50 desc
+
+                        ''', (id,)).fetchone()
+
+
 if __name__ == '__main__':
     db = DataBase('../external/resources/data.db')
     # db.add_solutor('Вода')
     # print(db.show_all_id_name_smile())
     # print(similiaryty_list_return('C1(=CC=C(C=C1)C=2N=NN(C2C#N)C3=C4N(C5=C3C(=C(C(=C5F)F)F)F)C=CC=C4)OC', db.show_all_id_name_smile()))
     # print(mol_mass_from_smiles('C1=CCCC2C(CC1)CCCCCC2'))
-    print(db.show_smile_by_id(2))
+    print(db.show_best_mtt_result(3))

@@ -1,22 +1,67 @@
+import base64
 from datetime import datetime
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QByteArray
-from PyQt6.QtGui import QAction, QMovie
-from PyQt6.QtSvgWidgets import QSvgWidget
+from PyQt6.QtGui import QAction, QMovie, QIcon, QPixmap, QImage
+from PyQt6.QtSvg import QSvgRenderer
+from PyQt6.QtSvgWidgets import QSvgWidget, QGraphicsSvgItem
 from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QSizePolicy, QLabel, QTextEdit, QMenu, QDateEdit, \
-    QFileDialog, QComboBox, QMessageBox, QWidget
+    QFileDialog, QComboBox, QMessageBox, QWidget, QGraphicsView, QGraphicsScene
 from PyQt6.QtCore import Qt
 from PyQt6.uic.properties import QtCore
 
 from Classes.DataBase import DataBase
 from Classes.dateclass import from_dot_to_rec
 from Classes.JchemPaint import runJCP
-from Classes.RDkit import getMolSvg, similiaryty_list_return
+from Classes.RDkit import getMolSvg, similiaryty_list_return, similiaryty_map_rerurn, similiaryty_map_rerurn_png
 from Classes.Rclass import calculate_EC50_SE_plots
 
 from UI_files.DialogAddNewCompound import Ui_Dialog
 from UI_files.MainWindow import Ui_MainWindow
 from UI_files.MTTable import Ui_MTTable
+
+class SvgShow(QDialog):
+    def __init__(self, svg):
+        super(SvgShow, self).__init__()
+
+        self.setMinimumWidth(400)
+        self.setMaximumHeight(400)
+        self.layout = QtWidgets.QGridLayout()
+        self.setWindowTitle("Карта сходства соединений")
+        self.setLayout(self.layout)
+
+        policy = QSizePolicy()
+        policy.setWidthForHeight(True)
+
+        self.svg_widget = QSvgWidget()
+        self.svg_widget.setSizePolicy(policy)
+
+        self.svg_widget.setMinimumSize(800, 800)
+        self.svg_widget.load(QByteArray(bytes(svg, encoding='utf-8')))
+
+
+
+
+        self.layout.addWidget(self.svg_widget)
+
+
+class ShowPng(QDialog):
+    def __init__(self, png):
+        super().__init__()
+
+        # self.setGeometry(200, 200, 700, 400)
+
+        label = QLabel(self)
+        qp = QPixmap()
+        qp.loadFromData(png)
+
+        label.setPixmap(qp)
+
+
+        self.layout = QtWidgets.QGridLayout()
+        self.layout.addWidget(label)
+        self.setWindowTitle("Карта сходства соединений")
+        self.setLayout(self.layout)
 
 
 
@@ -46,20 +91,36 @@ class MTTtableWidget(QDialog):
             self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(str(it[5])))
 
     def init_similarity_mode(self):
-        self.setWindowTitle("Подобия")
-        [self.ui.tableWidget.setColumnHidden(i, True) for i in range(3,6)]
+        self.setWindowTitle(f"Подобия {self.db.show_name_by_id(self.kwargs['chosen_compound_id'])[0]}")
+        [self.ui.tableWidget.setColumnHidden(i, True) for i in range(4,6)]
         self.ui.tableWidget.setColumnHidden(0, True)
-        [self.ui.tableWidget.horizontalHeaderItem(n+1).setText(i) for n,i in enumerate(['Наименование', '% сходства'])]
+        [self.ui.tableWidget.horizontalHeaderItem(n+1).setText(i) for n,i in enumerate(
+            ['Наименование', '% сходства', 'EC50'])]
         self.ui.tableWidget.setColumnWidth(1, 400)
         self.fill_similiarity_table()
+        self.ui.tableWidget.itemDoubleClicked.connect(self.show_similiarity_map)
 
     def fill_similiarity_table(self):
         for co, it in enumerate(similiaryty_list_return(self.db.show_smile_by_id(self.kwargs['chosen_compound_id'])[0],
-                                                        self.db.show_all_id_name_smile())[0:100]):
+                                                        self.db.show_all_id_name_smile())[0:10]):
             self.ui.tableWidget.setRowCount(co + 1)
-            self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(it[0]))
+            self.ui.tableWidget.setItem(co, 0, QTableWidgetItem(str(it[0])))
             self.ui.tableWidget.setItem(co, 1, QTableWidgetItem(it[1]))
             self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(str(round(it[2]*100,2))))
+            ec=str(self.db.show_best_mtt_result(it[0])[0])
+            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(ec if ec !="None" else ""))
+
+
+    def show_similiarity_map(self):
+        targ = self.db.show_smile_by_id(self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text())
+        ref = self.db.show_smile_by_id(self.kwargs['chosen_compound_id'])
+
+
+        # dlg = SvgShow(similiaryty_map_rerurn(targ[0], ref[0]))
+        dlg = ShowPng(similiaryty_map_rerurn_png(targ[0], ref[0]))
+
+        dlg.exec()
+
 
 
 
@@ -396,6 +457,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.tableWidget.setItem(co, 2, QTableWidgetItem(f"{it[2]}"))
             self.ui.tableWidget.setItem(co, 4, QTableWidgetItem(f"{it[8]}"))
             self.ui.tableWidget.setItem(co, 5, QTableWidgetItem(f"{it[5]}"))
-            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(f"{it[4]}"))
+            self.ui.tableWidget.setItem(co, 3, QTableWidgetItem(str(round(it[4], 2)) if type(it[4])==float else str(it[4])))
 
 
