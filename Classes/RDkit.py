@@ -6,6 +6,7 @@ from rdkit.Chem import rdMolDescriptors
 from rdkit import DataStructs
 
 import pubchempy
+from rdkit.Chem.rdFingerprintGenerator import GetRDKitFPGenerator
 
 
 def getMolSvg(smile='NC(C(=O)O)CS'):
@@ -43,7 +44,7 @@ def return_morganfp(smiles):
 def similiaryty_list_return(smile, list_of_id_name_smiles):
     targ = Chem.MolFromSmiles(smile)
     ms = [[i[0], i[1], Chem.MolFromSmiles(i[2])] for i in filter(lambda x: x[2] != smile, list_of_id_name_smiles)]
-    fpgen = AllChem.GetRDKitFPGenerator()
+    fpgen = GetRDKitFPGenerator()
     fps = [[x[0], x[1], fpgen.GetFingerprint(x[2])] for x in ms]
     tfp = fpgen.GetFingerprint(targ)
     r = [[i[0], i[1], DataStructs.TanimotoSimilarity(tfp, [i][0][2])] for i in fps]

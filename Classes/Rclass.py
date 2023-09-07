@@ -1,17 +1,15 @@
+from rpy2.situation import r_home_from_registry
+import os
 
+os.environ["R_HOME"] = r_home_from_registry()
+
+from rpy2.robjects.vectors import StrVector
+import rpy2.robjects as robjects
+
+import rpy2.robjects.packages as rpackages
+import Classes.config as conf
 
 def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
-    from rpy2.situation import r_home_from_registry
-    import os
-
-    os.environ["R_HOME"] = r_home_from_registry()
-
-    from rpy2.robjects.vectors import StrVector
-    import rpy2.robjects as robjects
-
-    import rpy2.robjects.packages as rpackages
-    import Classes.config as conf
-
     utils = rpackages.importr('utils')
     utils.chooseCRANmirror(ind=1)
     packnames = conf.packnames_for_r
@@ -34,6 +32,7 @@ def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
     library(Rmisc)
     library(data.table)
     library(sjPlot)
+    
     
     
     A172_AV98 <- read.xlsx(xlsname, sheet = sheet)
@@ -87,7 +86,7 @@ def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
       
     save_plot("./external/resources/plots/plot1.svg", fig = second, width=10, height=8)
     save_plot("./external/resources/plots/plot2.svg", fig = third, width=10, height=8)
-
+    dev.off()
     
             ''')
 
