@@ -149,4 +149,13 @@ if __name__ == '__main__':
     # print(db.show_all_id_name_smile())
     # print(similiaryty_list_return('C1(=CC=C(C=C1)C=2N=NN(C2C#N)C3=C4N(C5=C3C(=C(C(=C5F)F)F)F)C=CC=C4)OC', db.show_all_id_name_smile()))
     # print(mol_mass_from_smiles('C1=CCCC2C(CC1)CCCCCC2'))
-    print(db.show_best_mtt_result(3))
+    # print(db.show_best_mtt_result(3))
+    import csv
+
+    with open("C:/Users/vofan/Desktop/тестовые.csv") as csvfile:
+        rows = csv.reader(csvfile)
+        res = [i for i in rows]
+        res = [i[0].split(';') for i in res]
+        for i in res:
+            db.add_compound(i[1], i[0], solutor_id=1)
+        print(res)
