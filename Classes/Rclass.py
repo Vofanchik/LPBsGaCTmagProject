@@ -1,5 +1,10 @@
+import time
+
 from rpy2.situation import r_home_from_registry
 import os
+
+from Classes.Testin import timeit
+
 try:
     os.environ["R_HOME"] = r_home_from_registry()
 
@@ -12,6 +17,8 @@ import rpy2.robjects as robjects
 import rpy2.robjects.packages as rpackages
 import Classes.config as conf
 
+
+@timeit
 def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
     utils = rpackages.importr('utils')
     utils.chooseCRANmirror(ind=1)
@@ -44,8 +51,7 @@ def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
                        melt(as.data.table(compound_line[,-1]), measure.vars = colnames(compound_line)[-1]))
     
     compound_line$variable <- as.numeric(as.character(compound_line$variable))
-    
-    
+        
     second <- ggplot(compound_line)+
       aes(as.factor(variable), value)+
       geom_boxplot()    
@@ -92,6 +98,7 @@ def calculate_EC50_SE_plots(table_filename, compound, line, sheet):
     r_f = robjects.globalenv['dr']
     for i in list(r_f):
         print(i)
+
     return r_f
 
 

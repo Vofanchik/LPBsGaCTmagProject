@@ -1,22 +1,21 @@
-from PyQt6.QtCore import QBuffer, QByteArray, QIODevice
 from rdkit import Chem, DataStructs
-from rdkit.Chem import rdDepictor, AllChem, Draw
+from rdkit.Chem import AllChem, Draw, rdMolDescriptors
 from rdkit.Chem.Draw import rdMolDraw2D, SimilarityMaps
-from rdkit.Chem import rdMolDescriptors
-from rdkit import DataStructs
 
 import pubchempy
 from rdkit.Chem.rdFingerprintGenerator import GetRDKitFPGenerator
 
+from Classes.Testin import timeit
 
+@timeit
 def getMolSvg(smile='NC(C(=O)O)CS'):
     mol = Chem.MolFromSmiles(smile)
     mc = Chem.Mol(mol.ToBinary())
-
+    print(mc)
     try:
         Chem.Kekulize(mc)
     except:
-        mc = Chem.Mol(mol.ToBinary())
+        pass
 
     drawer = rdMolDraw2D.MolDraw2DSVG(300, 300)
     drawer.DrawMolecule(mc)
@@ -24,7 +23,7 @@ def getMolSvg(smile='NC(C(=O)O)CS'):
     svg = drawer.GetDrawingText().replace('opacity:1.0', 'opacity:0.0')
     return svg
 
-
+@timeit
 def mol_mass_from_smiles(smiles):
     mol = Chem.MolFromSmiles(smiles)
     mass = rdMolDescriptors.CalcExactMolWt(mol)
@@ -40,7 +39,7 @@ def return_morganfp(smiles):
     fp = AllChem.GetMorganFingerprint(mol, 2)
     return fp
 
-
+@timeit
 def similiaryty_list_return(smile, list_of_id_name_smiles):
     targ = Chem.MolFromSmiles(smile)
     ms = [[i[0], i[1], Chem.MolFromSmiles(i[2])] for i in filter(lambda x: x[2] != smile, list_of_id_name_smiles)]
@@ -51,11 +50,12 @@ def similiaryty_list_return(smile, list_of_id_name_smiles):
     r.sort(key=lambda x: x[2], reverse=True)
     return r
 
+@timeit
 def similiaryty_map_rerurn(target, referent):
     targetmol = Chem.MolFromSmiles(target)
     refmol = Chem.MolFromSmiles(referent)
 
-    d = Draw.MolDraw2DSVG(800, 800)
+    d = Draw.MolDraw2DSVG(400, 400)
     d.ClearDrawing()
     target_mol_simi_fig, maxweight = SimilarityMaps.GetSimilarityMapForFingerprint(
         refmol,
@@ -67,13 +67,14 @@ def similiaryty_map_rerurn(target, referent):
     d.FinishDrawing()
     return d.GetDrawingText().replace('opacity:1.0', 'opacity:0.0')
 
+@timeit
 def similiaryty_map_rerurn_png(target, referent):
     targetmol = Chem.MolFromSmiles(target)
     refmol = Chem.MolFromSmiles(referent)
 
-    d = Draw.MolDraw2DCairo(800, 800)
+    d = Draw.MolDraw2DCairo(400, 400)
     d.ClearDrawing()
-    target_mol_simi_fig, maxweight = SimilarityMaps.GetSimilarityMapForFingerprint(
+    SimilarityMaps.GetSimilarityMapForFingerprint(
         refmol,
         targetmol,
         lambda m, i: SimilarityMaps.GetMorganFingerprint(

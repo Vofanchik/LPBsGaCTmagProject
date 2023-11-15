@@ -11,6 +11,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.uic.properties import QtCore
 
 from Classes.DataBase import DataBase
+from Classes.Testin import timeit
 from Classes.dateclass import from_dot_to_rec
 from Classes.JchemPaint import runJCP
 from Classes.RDkit import getMolSvg, similiaryty_list_return, similiaryty_map_rerurn, similiaryty_map_rerurn_png
@@ -19,6 +20,9 @@ from Classes.Rclass import calculate_EC50_SE_plots
 from UI_files.DialogAddNewCompound import Ui_Dialog
 from UI_files.MainWindow import Ui_MainWindow
 from UI_files.MTTable import Ui_MTTable
+
+
+
 
 class SvgShow(QDialog):
     def __init__(self, svg):
@@ -49,14 +53,13 @@ class ShowPng(QDialog):
     def __init__(self, png):
         super().__init__()
 
-        # self.setGeometry(200, 200, 700, 400)
+        # self.setGeometry(200, 200, 200, 200)
 
         label = QLabel(self)
+        # label.setMaximumHeight(100)
         qp = QPixmap()
         qp.loadFromData(png)
-
         label.setPixmap(qp)
-
 
         self.layout = QtWidgets.QGridLayout()
         self.layout.addWidget(label)
@@ -120,12 +123,6 @@ class MTTtableWidget(QDialog):
         dlg = ShowPng(similiaryty_map_rerurn_png(targ[0], ref[0]))
 
         dlg.exec()
-
-
-
-
-
-
 
 
 class DialogAddNewCompound(QDialog):
@@ -223,7 +220,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-
         self.load_dialog = QDialog()
         self.load_dialog_layout = QtWidgets.QVBoxLayout()
         self.load_dialog.setWindowTitle('Подождите')
@@ -233,8 +229,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.load_dialog_movie = QMovie("./external/resources/gif/load.gif")
         self.load_dialog_label.setMovie(self.load_dialog_movie)
         self.load_dialog_layout.addWidget(self.load_dialog_label)
-
-
 
         try:
             self.setStyleSheet(open("./Ui_files/Style.qss", "r").read())
@@ -254,11 +248,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.svg_widget.setMinimumSize(300, 300)
 
-        # self.ui.gridLayout.setColumnMinimumWidth(1, 300)
-        # self.ui.gridLayout.setColumnStretch(1,9)
-        # self.ui.gridLayout.setRowMinimumHeight(0, 300)
-        # self.ui.gridLayout.setRowStretch(0,9)
-
         def add_menu():
             bar = self.menuBar()
             actions = bar.addMenu("Действия")
@@ -268,42 +257,29 @@ class MainWindow(QtWidgets.QMainWindow):
             actions.triggered[QAction].connect(self.menu_bar_triggered)
 
         add_menu()
-
         self.ui.tableWidget.itemDoubleClicked.connect(self.enter_chosen_compound)
-
-        # Создаем меню
         self.contextMenu = QMenu(self)
         self.addMTTAction = QAction("Добавить МТТ-тест", self)
         self.ShowMTTByIdAction = QAction("Показать тесты", self)
         self.ShowSimiliarity = QAction("Найти подобия", self)
-
         self.contextMenu.addAction(self.addMTTAction)
         self.contextMenu.addAction(self.ShowMTTByIdAction)
         self.contextMenu.addAction(self.ShowSimiliarity)
-
-
         self.addMTTAction.setDisabled(True)
         self.ShowMTTByIdAction.setDisabled(True)
         self.ShowSimiliarity.setDisabled(True)
-
-
         self.ui.tableWidget.cellClicked.connect(lambda: [self.ui.delCompoundButton.setEnabled(True),
                                                          self.addMTTAction.setEnabled(True),
                                                          self.ShowMTTByIdAction.setEnabled(True),
                                                          self.ShowSimiliarity.setEnabled(True)])
 
-        # Подключаем сигналы к слотам
         self.addMTTAction.triggered.connect(self.add_mtt_dialog)
         self.ShowMTTByIdAction.triggered.connect(self.show_mtt_dialog)
         self.ShowSimiliarity.triggered.connect(self.show_similiarity_dialog)
-
-
-        # Подключаем меню к таблице
         self.ui.tableWidget.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.ui.tableWidget.customContextMenuRequested.connect(self.showContextMenu)
 
     def showContextMenu(self, position):
-        # Показываем контекстное меню в указанной позиции
         self.contextMenu.exec(self.ui.tableWidget.mapToGlobal(position))
 
     def add_mtt_dialog(self):
@@ -343,8 +319,6 @@ class MainWindow(QtWidgets.QMainWindow):
         except:
             self.load_dialog.hide()
             QMessageBox().critical(self, 'Ошибка', "Что-то пошло не так")
-
-        # print(file_path,from_dot_to_rec(0, date_test),sheet_num,line_num, line_name, ic_ec[0])
 
     def show_mtt_dialog(self):
         chosen_compound_id = self.ui.tableWidget.item(self.ui.tableWidget.currentRow(), 0).text()
@@ -417,6 +391,7 @@ class MainWindow(QtWidgets.QMainWindow):
         #                               (self.ui.tableWidget.currentRow(), 5).text()), 1, 2)
         self.update_svg_widget(self.smiles)
 
+    @timeit
     def update_svg_widget(self, smile):
         self.svg_widget.load(QByteArray(bytes(getMolSvg(smile), encoding='utf-8')))
 

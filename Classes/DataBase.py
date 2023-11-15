@@ -1,5 +1,6 @@
 import sqlite3
 from Classes.RDkit import mol_mass_from_smiles, iupac_from_smiles, return_morganfp, similiaryty_list_return
+from Classes.Testin import timeit
 
 
 class DataBase:
@@ -50,6 +51,7 @@ class DataBase:
 
         self.conn.commit()
 
+    @timeit
     def add_compound(self, name, smiles, morganfp=None, solutor_id=1, molecular_weight=0.0):
         try:
             molecular_weight = mol_mass_from_smiles(smiles)
