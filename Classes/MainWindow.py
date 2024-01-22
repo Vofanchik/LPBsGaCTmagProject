@@ -1,14 +1,15 @@
 import base64
 from datetime import datetime
-from PyQt6 import QtWidgets
-from PyQt6.QtCore import QByteArray
-from PyQt6.QtGui import QAction, QMovie, QIcon, QPixmap, QImage
-from PyQt6.QtSvg import QSvgRenderer
-from PyQt6.QtSvgWidgets import QSvgWidget, QGraphicsSvgItem
-from PyQt6.QtWidgets import QDialog, QTableWidgetItem, QSizePolicy, QLabel, QTextEdit, QMenu, QDateEdit, \
-    QFileDialog, QComboBox, QMessageBox, QWidget, QGraphicsView, QGraphicsScene
-from PyQt6.QtCore import Qt
-from PyQt6.uic.properties import QtCore
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QByteArray
+from PyQt5.QtGui import QMovie, QIcon, QPixmap, QImage
+
+from PyQt5.QtSvg import QSvgRenderer, QSvgWidget
+
+from PyQt5.QtWidgets import QDialog, QTableWidgetItem, QSizePolicy, QLabel, QTextEdit, QMenu, QDateEdit, \
+    QFileDialog, QComboBox, QMessageBox, QWidget, QGraphicsView, QGraphicsScene, QAction
+from PyQt5.QtCore import Qt
+from PyQt5.uic.properties import QtCore
 
 from Classes.DataBase import DataBase
 from Classes.Testin import timeit
