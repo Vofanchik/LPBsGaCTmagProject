@@ -1,0 +1,4 @@
+PyQt6
+rdkit
+pubchempy
+rpy2
